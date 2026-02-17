@@ -1,6 +1,9 @@
 # Variables de entorno
 .env
 
+# Caché
+cache.db
+
 # Python
 __pycache__/
 *.py[cod]
