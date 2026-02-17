@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreatAnalyzer - Analizador de Amenazas Digitales</title>
+    <meta name="description" content="Análisis forense de URLs, emails y SMS para detectar amenazas de seguridad.">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Threat<span>Analyzer</span></div>
+            <p class="subtitle">Análisis forense de URLs, emails y SMS</p>
+        </header>
+
+        <main>
+            <div class="cache-toggle-container">
+                <label class="cache-toggle-label">
+                    <span class="cache-toggle-text">Usar caché persistente</span>
+                    <div class="cache-toggle-switch">
+                        <input type="checkbox" id="cache-toggle" checked>
+                        <span class="cache-toggle-slider"></span>
+                    </div>
+                </label>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="url">Analizar URL</button>
+                <button class="tab-btn" data-tab="inbox">Analizar Emails (Buzón Temporal)</button>
+                <button class="tab-btn" data-tab="sms">Analizar SMS (Smishing)</button>
+            </div>
+
+            <div id="url-section" class="tab-content active">
+                <div class="search-box">
+                    <input type="text" id="url-input" placeholder="https://ejemplo.com" autocomplete="off">
+                    <button id="analyze-url-btn">Analizar URL</button>
+                </div>
+            </div>
+
+            <div id="inbox-section" class="tab-content">
+                <div class="email-box">
+                    <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 15px; text-align: center;">
+                        Genera un email temporal, reenvía allí el correo sospechoso y analízalo directamente.</p>
+                    <div class="inbox-controls">
+                        <button id="gen-email-btn">Generar Dirección</button>
+                        <div class="email-display-wrapper">
+                            <div id="temp-email-display" class="email-address-badge">...</div>
+                            <button id="copy-email-btn" title="Copiar dirección">📋</button>
+                        </div>
+                        <button id="refresh-inbox-btn">🔄 Actualizar</button>
+                    </div>
+                    <div class="inbox-list" id="inbox-list">
+                        <p class="empty-msg">No hay mensajes. Reenvía tu email sospechoso para empezar el análisis
+                            forense.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sms-section" class="tab-content">
+                <div class="email-box">
+                    <div class="sms-inputs">
+                        <input type="text" id="sms-sender" placeholder="Número del remitente (Opcional)"
+                            class="sms-phone-input">
+                        <textarea id="sms-content" placeholder="Escribe o pega aquí el contenido del SMS sospechoso..."
+                            class="sms-text-input"></textarea>
+                        <button id="analyze-sms-btn" style="width: 100%; margin-top: 10px;">Analizar SMS</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Escaneando el dominio en tiempo real...</p>
+            </div>
+
+            <div id="results" class="hidden">
+                <div class="risk-meter-container">
+                    <div class="risk-gauge">
+                        <svg viewBox="0 0 100 50">
+                            <path d="M 10 45 A 35 35 0 0 1 90 45" fill="none" stroke="#222" stroke-width="8" />
+                            <path id="gauge-path" d="M 10 45 A 35 35 0 0 1 90 45" fill="none" stroke="url(#gradient)"
+                                stroke-width="8" stroke-dasharray="125.6" stroke-dashoffset="125.6" />
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#ffcc00;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#ff4d4d;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="risk-value" id="risk-score">0%</div>
+                        <div class="risk-label">Nivel de Riesgo</div>
+                    </div>
+                    <div class="risk-details">
+                        <ul id="risk-factors"></ul>
+                    </div>
+                </div>
+
+                <div class="grid">
+                    <div class="card">
+                        <h3>Certificado SSL</h3>
+                        <div id="ssl-status" class="status-badge">Detectando...</div>
+                        <div class="info-list" id="ssl-info"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Propiedades del Dominio</h3>
+                        <div id="domain-age" class="info-list"></div>
+                    </div>
+
+                    <div class="card" id="url-list-card">
+                        <h3>Enlaces Detectados</h3>
+                        <div id="url-list-container" class="info-list">
+                            <p class="empty-msg">No se han analizado enlaces aún.</p>
+                        </div>
+                    </div>
+
+                    <div class="card" id="email-details-card">
+                        <h3>Análisis de Mensaje</h3>
+                        <div id="email-info" class="info-list">
+                            <p class="empty-msg">Analiza un email para ver detalles aquí.</p>
+                        </div>
+                    </div>
+
+                    <div class="card" id="reputation-card">
+                        <h3>Reputación del Remitente</h3>
+                        <div id="reputation-info" class="info-list">
+                            <p class="empty-msg">No hay reportes disponibles aún.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Reputación & Malware</h3>
+                        <div id="vt-info" class="info-list"></div>
+                    </div>
+
+                    <div class="card" id="ai-analysis-card">
+                        <h3>🤖 Análisis de IA (Gemma 3)</h3>
+                        <div id="ai-analysis-info" class="info-list">
+                            <p class="empty-msg">Análisis de IA no disponible.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 ThreatAnalyzer Security Labs. Herramienta de auditoría de amenazas digitales.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

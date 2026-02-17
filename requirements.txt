@@ -1,0 +1,12 @@
+flask
+python-whois
+cryptography
+requests
+tldextract
+python-dateutil
+curl-cffi
+beautifulsoup4
+pyspellchecker
+flask-limiter
+python-dotenv
+bleach
